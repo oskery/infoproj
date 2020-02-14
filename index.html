@@ -1,0 +1,175 @@
+<html>
+
+<head>
+  <script src="data.js"></script>
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="billboard.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/britecharts@2.10.0/dist/umd/bar.min.js" type="text/javascript"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/britecharts/dist/css/britecharts.min.css" type="text/css" />
+  <link rel="stylesheet" type="text/css" href="billboard.min.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <title>Information Visualisation</title>
+</head>
+
+<body>
+  <h1>Individuals using the internet (% of population)</h1>
+  <small>Data taken from <a href="https://databank.worldbank.org/databases/">The World Bank</a>. Problem (!) occurs when
+    there are missing data points (e.g. internet usage for Jamaica N/A for year 1996). Then represented data is false in
+    some sense (needs to be adressed).</small>
+  <div id="linechart"></div>
+
+  <div class="row">
+    <div>
+      <div id="gaugechart"></div>
+    </div>
+    <div>
+      <div id="piechart"></div>
+    </div>
+    <div>
+      <div id="radarchart"></div>
+    </div>
+    <div>
+      <div id="brushchart"></div>
+    </div>
+  </div>
+  <script>
+
+    let startYear = 1993
+    let endYear = 2018
+    let nrYears = endYear - startYear
+    let fieldNrs = [...Array(nrYears).keys()].map(x => x + 37)
+    // =>    [37,38,39,...,64] ("field37" is 1993)
+
+    let countries = json.slice(2)
+    let nrCountries = countries.length
+
+    let yearSums = Array(nrYears).fill(0)
+    let dataPoints = Array(nrYears).fill(nrCountries)
+    let yearData = null
+
+    // Calculate world (sum country) data
+    for (let i = 0; i < nrCountries; i++) {
+      for (let j = 0; j < nrYears; j++) {
+        yearData = countries[i]['column' + fieldNrs[j]]
+        if (!yearData || (yearData === "")) {
+          dataPoints[j]--
+          continue
+        }
+        yearSums[j] += Number(yearData)
+      }
+    }
+
+    let yearAvg = yearSums.map((year, i) => year / dataPoints[i])
+
+    var chart = bb.generate({
+      data: {
+        x: "x",
+        columns: [
+          ["x", ...[...Array(nrYears).keys()].map(x => x + startYear)],
+          ["Individuals using the Internet (% of population)", ...yearAvg]
+        ]
+      },
+      bindto: "#linechart"
+    });
+
+    var gauge = bb.generate({
+      data: {
+        columns: [
+          [endYear, yearAvg[nrYears - 1]]
+        ],
+        type: "gauge",
+        onclick: function (d, i) {
+          console.log("onclick", d, i);
+        },
+        onover: function (d, i) {
+          console.log("onover", d, i);
+        },
+        onout: function (d, i) {
+          console.log("onout", d, i);
+        }
+      },
+      gauge: {},
+      color: {
+        pattern: [
+          "#FF0000",
+          "#F97600",
+          "#F6C600",
+          "#60B044"
+        ],
+        threshold: {
+          values: [
+            30,
+            60,
+            90,
+            100
+          ]
+        }
+      },
+      size: {
+        height: 180
+      },
+      bindto: "#gaugechart"
+    });
+
+    var piechart = bb.generate({
+      data: {
+        columns: [
+          [startYear, yearSums[0]],
+          [endYear, yearSums[nrYears - 1]]
+        ],
+        type: "pie",
+        onclick: function (d, i) {
+          console.log("onclick", d, i);
+        },
+        onover: function (d, i) {
+          console.log("onover", d, i);
+        },
+        onout: function (d, i) {
+          console.log("onout", d, i);
+        }
+      },
+      bindto: "#piechart"
+    });
+
+
+    var radarchart = bb.generate({
+      data: {
+        x: "x",
+        columns: [
+          ["x", "Data A", "Data B", "Data C", "Data D", "Data E"],
+          [startYear, 330, 350, 200, 380, 150],
+          [startYear + 12, 130, 100, 30, 200, 80],
+          [endYear, 230, 153, 85, 300, 250]
+        ],
+        type: "radar",
+        labels: true
+      },
+      radar: {
+        axis: {
+          max: 400
+        },
+        level: {
+          depth: 4
+        },
+        direction: {
+          clockwise: true
+        }
+      },
+      bindto: "#radarchart"
+    });
+    let brushChart = createBrushChart();
+
+    brushChart
+    .width(300)
+    .height(300)
+    .on('brushchart', function(brushExtent) {
+        // Do something with the brushExtent
+    });
+
+    brushContainer.datum(yearAvg).call(brushChart);
+  </script>
+
+</body>
+
+</html>
